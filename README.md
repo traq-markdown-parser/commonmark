@@ -27,4 +27,4 @@ Rust の版は `rust-toolchain.toml`、外部依存の版は manifest と `Cargo
 
 依存先は [core](https://github.com/traq-markdown-parser/core) です。traP / traQ の文法・preset・アプリケーション方針は知りません。
 
-traQ 用の構成は [trap](https://github.com/traq-markdown-parser/trap)、Wasm と TypeScript / Go bindings は [sdk](https://github.com/traq-markdown-parser/sdk)、HTML と CSS は [traq-markdown-it](https://github.com/traPtitech/traq-markdown-it) にあります。
+traP 固有の拡張部品は [trap-extension](https://github.com/traq-markdown-parser/trap-extension)、traQ 向けの構成と Wasm・TypeScript / Go bindings は [traq](https://github.com/traq-markdown-parser/traq)、HTML と CSS は [traq-markdown-it](https://github.com/traPtitech/traq-markdown-it) にあります。
