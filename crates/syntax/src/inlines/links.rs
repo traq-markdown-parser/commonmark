@@ -42,6 +42,7 @@ pub fn link(
             },
         }));
     }
+
     if source.as_bytes()[pos] != b']' {
         return Ok(None);
     }
@@ -54,6 +55,7 @@ pub fn link(
     let Some(bracket) = input.bracket.filter(|b| b.active) else {
         return Ok(discard());
     };
+
     let direct = destination(source, pos + 1, budget, options.normalize)?;
     let image = bracket.tag == "image" && (options.direct_images || direct.is_none());
     let (end, target, title) = if let Some(direct) = direct {
@@ -73,6 +75,7 @@ pub fn link(
         };
         (end, target.clone(), title.clone())
     };
+
     let kind = if image {
         NodeKind::new(markdown_commonmark_contracts::Image {
             destination: target,
@@ -114,6 +117,7 @@ pub fn autolink(
     if end == source.len() {
         return Ok(None);
     }
+
     let value = &source[pos + 1..end];
     let email = email(value);
     let scheme = value.split_once(':').map(|(scheme, _)| scheme);
@@ -128,6 +132,7 @@ pub fn autolink(
     {
         return Ok(None);
     }
+
     let Some(destination) = (options.normalize)(&if email {
         format!("mailto:{value}")
     } else {
@@ -135,6 +140,7 @@ pub fn autolink(
     }) else {
         return Ok(None);
     };
+
     let children = vec![Node::leaf(
         input.source.span_for(pos + 1..end)?,
         markdown_commonmark_contracts::Text {

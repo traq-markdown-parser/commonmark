@@ -14,12 +14,14 @@ pub(super) fn parse(
     let Some(first_marker) = item(input.current()) else {
         return Ok(None);
     };
+
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
     let mut i = first;
     let mut children = vec![];
     let mut tight = true;
+
     while i < lines.len() {
         if thematic(content(source, &lines[i])) {
             break;
@@ -30,6 +32,7 @@ pub(super) fn parse(
         if first_marker.ordered != marker.ordered || first_marker.delimiter != marker.delimiter {
             break;
         }
+
         let item_start = i;
         let first_content = &content(source, &lines[i])[marker.content..];
         let lazy = super::paragraph::paragraph_start(first_content, input);
@@ -42,6 +45,7 @@ pub(super) fn parse(
         };
         let mut ranges = vec![lines[i].start + marker.content..end];
         i += 1;
+
         while i < lines.len() {
             let continuation = content(source, &lines[i]);
             if blank(continuation) {
@@ -97,6 +101,7 @@ pub(super) fn parse(
             }
             i += 1;
         }
+
         // Blank continuation lines still lose the list's indentation,
         // including when they become literal content of a fenced block.
         for range in ranges.iter_mut().skip(1) {
@@ -107,6 +112,7 @@ pub(super) fn parse(
                     .min(raw.len() - raw.trim_start_matches(' ').len());
             }
         }
+
         budget.token()?;
         children.push(DraftNode::blocks(
             source.span_for(lines[item_start].start..lines[i - 1].end)?,
@@ -116,6 +122,7 @@ pub(super) fn parse(
             source.join(&ranges)?,
         ));
     }
+
     let mut node = DraftNode::nodes(
         source.span_for(lines[first].start..lines[i - 1].end)?,
         NodeKind::new(markdown_commonmark_contracts::List {
@@ -128,6 +135,7 @@ pub(super) fn parse(
     node.finish = Some(finish_list);
     Ok(Some(BlockMatch::node(i, node)))
 }
+
 fn finish_list(node: &mut DraftNode) {
     let loose = node.children().iter().any(|item| {
         item.is_loose()
@@ -143,6 +151,7 @@ fn finish_list(node: &mut DraftNode) {
                 .count()
                 > 1
     });
+
     if let Some(list) = node.kind.get_mut::<markdown_commonmark_contracts::List>() {
         list.tight &= !loose;
     }

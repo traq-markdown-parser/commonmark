@@ -14,6 +14,7 @@ pub fn parse(
     if quote(input.current()).is_none() {
         return Ok(None);
     }
+
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
@@ -21,6 +22,7 @@ pub fn parse(
     let mut ranges = vec![];
     let mut lazy_lines = vec![];
     let mut lazy = false;
+
     while end < lines.len() {
         let next = input.line(end);
         let indent = next.len() - next.trim_start_matches(' ').len();
@@ -35,6 +37,7 @@ pub fn parse(
         }
         end += 1;
     }
+
     let mut view = source.join(&ranges)?;
     super::super::context::mark_lazy(&mut view, lazy_lines, budget)?;
     Ok(Some(BlockMatch::node(

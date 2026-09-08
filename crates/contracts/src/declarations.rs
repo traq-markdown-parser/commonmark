@@ -6,6 +6,7 @@ pub struct Contracts {
     pub plugin: Plugin,
     pub html: Plugin,
 }
+
 pub fn preset() -> &'static Contracts {
     static PRESET: LazyLock<Contracts> = LazyLock::new(|| {
         let commonmark = Plugin::group("CommonMark");

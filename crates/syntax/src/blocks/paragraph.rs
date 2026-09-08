@@ -43,6 +43,7 @@ pub(super) fn parse(
     let lines = input.lines;
     let first = input.start;
     let mut end = first + 1;
+
     while end < lines.len()
         && setext(input, end)?.is_none()
         && !input.interrupts(end, Interrupt::Paragraph)
@@ -53,6 +54,7 @@ pub(super) fn parse(
     let start = lines[first].start + raw.len() - raw.trim_start_matches(ascii_space).len();
     let finish = lines[end - 1].start + input.line(end - 1).trim_end_matches(ascii_space).len();
     let view = source.join(&[start..finish.max(start)])?;
+
     let kind = if let Some(level) = if end < lines.len() {
         setext(input, end)?
     } else {

@@ -17,10 +17,12 @@ pub(super) fn parse(
     if line.starts_with("    ") || !line.trim_start_matches([' ', '\t']).starts_with('[') {
         return Ok(None);
     }
+
     let first = input.start;
     let lines = input.lines;
     let mut last = first + 1;
     let mut found = None;
+
     while last <= lines.len() {
         if last > first + 1 && input.interrupts(last - 1, Interrupt::Reference) {
             break;
@@ -48,12 +50,14 @@ pub(super) fn parse(
         }
         last += 1;
     }
+
     let Some((mut end, (key, destination, title))) = found else {
         return Ok(None);
     };
     if end < lines.len() && blank(input.line(end)) {
         end += 1;
     }
+
     let mut result = BlockMatch::ignore(end);
     result.definitions.push(Definition {
         key,

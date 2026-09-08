@@ -10,11 +10,13 @@ pub enum LinkForm {
     Autolink,
     Linkify,
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Paragraph {}
 impl NodeData for Paragraph {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -26,11 +28,13 @@ impl NodeData for Heading {
         (1..=6).contains(&self.level)
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Blockquote {}
 impl NodeData for Blockquote {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -40,6 +44,7 @@ pub struct List {
     pub tight: bool,
 }
 impl NodeData for List {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -47,6 +52,7 @@ pub struct ListItem {
     pub marker: String,
 }
 impl NodeData for ListItem {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -60,6 +66,7 @@ impl NodeData for CodeBlock {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -71,6 +78,7 @@ impl NodeData for ThematicBreak {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -82,6 +90,7 @@ impl NodeData for Text {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -91,6 +100,7 @@ impl NodeData for Softbreak {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -100,6 +110,7 @@ impl NodeData for Hardbreak {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -111,16 +122,19 @@ impl NodeData for InlineCode {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Emphasis {}
 impl NodeData for Emphasis {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Strong {}
 impl NodeData for Strong {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -130,6 +144,7 @@ pub struct Link {
     pub form: LinkForm,
 }
 impl NodeData for Link {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -139,6 +154,7 @@ pub struct Image {
     pub label_source: String,
 }
 impl NodeData for Image {}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
@@ -150,6 +166,7 @@ impl NodeData for HtmlInline {
         _children.is_empty()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
 #[cfg_attr(feature = "contracts", derive(ts_rs::TS, schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]

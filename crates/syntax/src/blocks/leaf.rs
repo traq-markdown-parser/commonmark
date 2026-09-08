@@ -14,12 +14,14 @@ pub(super) fn fenced(
     let Some((marker, count, info)) = fence(input.current()) else {
         return Ok(None);
     };
+
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
     let info_end = lines[first].start + input.current().trim_end().len();
     let info = source.literal(info_end - info.len()..info_end).into_owned();
     let indent = input.current().len() - input.current().trim_start_matches(' ').len();
+
     let mut end = first + 1;
     while end < lines.len() {
         if fence(input.line(end))
@@ -29,6 +31,7 @@ pub(super) fn fenced(
         }
         end += 1;
     }
+
     let literal = lines[first + 1..end]
         .iter()
         .map(|line| {
@@ -37,6 +40,7 @@ pub(super) fn fenced(
             source.literal(line.start + remove..line.end)
         })
         .collect();
+
     if end < lines.len() {
         end += 1;
     }
@@ -60,11 +64,13 @@ pub(super) fn indented(
     if !input.current().starts_with("    ") {
         return Ok(None);
     }
+
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
     let mut end = first;
     let mut literal = String::new();
+
     while end < lines.len() {
         let raw = &source.text()[lines[end].clone()];
         if blank(input.line(end)) {
@@ -83,6 +89,7 @@ pub(super) fn indented(
             break;
         }
     }
+
     if !literal.ends_with('\n') {
         literal.push('\n');
     }
@@ -106,11 +113,13 @@ pub(super) fn atx(
     let Some((level, prefix)) = heading(input.current()) else {
         return Ok(None);
     };
+
     let source = input.source;
     let line = &input.lines[input.start];
     let mut end = line.start + input.current().trim_end().len().max(prefix);
     let text = &source.text()[line.start + prefix..end];
     let without = text.trim_end_matches('#');
+
     if without.is_empty() || without.ends_with([' ', '\t']) {
         end = line.start + prefix + without.trim_end().len();
     }
@@ -132,6 +141,7 @@ pub(super) fn thematic_break(
     if !thematic(input.current()) {
         return Ok(None);
     }
+
     let line = &input.lines[input.start];
     let marker = input
         .current()

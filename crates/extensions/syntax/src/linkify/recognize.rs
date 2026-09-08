@@ -20,9 +20,11 @@ pub(crate) struct Match {
 pub(super) fn find(text: &str) -> Vec<Match> {
     find_impl(text, None)
 }
+
 pub(super) fn at(text: &str, position: usize) -> Option<Match> {
     find_impl(text, Some(position)).into_iter().next()
 }
+
 fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
     static CANDIDATE: LazyLock<Regex> = LazyLock::new(|| {
         let letter = r"[^\p{P}\p{Z}\p{C}<>｜]";
@@ -42,6 +44,7 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
             format!(r"//(?:[^\s@/\[\]()<>]{{1,50}}@)?(?P<host>{host})(?P<port>:[0-9]{{1,5}})?");
         Regex::new(&format!(r#"(?i)(?:(?P<scheme>https?:|ftp:)?{authority}|(?P<mail>mailto:)?(?P<email>[-;:&=+$,.a-z0-9_][-;:&=+$,".a-z0-9_]{{0,63}}@{host})|(?P<fuzzy>{domain}(?:\.{domain})*\.{tld})(?P<fport>:[0-9]{{1,5}})?)"#)).unwrap()
     });
+
     let mut occupied = 0;
     let candidates: Box<dyn Iterator<Item = regex::Captures<'_>> + '_> =
         if let Some(position) = position {
@@ -54,6 +57,7 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
         } else {
             Box::new(CANDIDATE.captures_iter(text))
         };
+
     candidates
         .filter_map(|m| {
             let matched = m.get(0)?;
@@ -61,6 +65,7 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
             if start < occupied {
                 return None;
             }
+
             let before = text[..start].chars().next_back();
             let explicit = m.name("scheme").is_some();
             let email = m.name("email").is_some();
@@ -98,11 +103,13 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
             if relative && !host.contains('.') {
                 return None;
             }
+
             if let Some(port) = m.name("port").or_else(|| m.name("fport"))
                 && port.as_str()[1..].parse::<u32>().ok()? > 65535
             {
                 return None;
             }
+
             let mut end = matched.end();
             static TERMINATOR: LazyLock<Regex> =
                 LazyLock::new(|| Regex::new(r"^(?:[\p{P}\p{Z}\p{C}<>｜]|$)").unwrap());
@@ -122,6 +129,7 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
             if text[end..].starts_with(['-', '_']) {
                 return None;
             }
+
             if !email {
                 end = path_end(text, end);
             }
@@ -134,6 +142,7 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
             } else {
                 ""
             };
+
             let target = format!("{prefix}{raw}");
             let normalized_label = label(&target);
             Some(Match {

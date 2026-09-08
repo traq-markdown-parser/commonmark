@@ -2,9 +2,11 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
     if !text[start..].starts_with(['/', '?', '#']) {
         return start;
     }
+
     let mut end = start;
     let mut pairs = vec![];
     let mut quoted_until = 0;
+
     for (offset, ch) in text[start..].char_indices() {
         let position = start + offset;
         if position < quoted_until {
@@ -45,9 +47,11 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
         }
         end = start + offset + ch.len_utf8();
     }
+
     if let Some((_, open)) = pairs.first() {
         end = *open;
     }
+
     let stopped_at_quote = text[end..].starts_with(['\'', '"']);
     while end > start
         && (text[..end].ends_with('*')
@@ -55,6 +59,7 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
     {
         end -= 1;
     }
+
     if end == start + 1 && !text[start..].starts_with('/') {
         start
     } else {

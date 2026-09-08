@@ -12,17 +12,20 @@ pub(crate) fn destination(
     if bytes.get(pos) != Some(&b'(') {
         return Ok(None);
     }
+
     let mut i = pos + 1;
     while matches!(bytes.get(i), Some(b' ' | b'\t' | b'\n')) {
         budget.spend(1)?;
         i += 1;
     }
+
     let angle = bytes.get(i) == Some(&b'<');
     if angle {
         i += 1;
     }
     let start = i;
     let mut depth = 0;
+
     while i < bytes.len() {
         budget.spend(1)?;
         let b = bytes[i];
@@ -54,18 +57,21 @@ pub(crate) fn destination(
     if depth != 0 || angle && bytes.get(i) != Some(&b'>') {
         return Ok(None);
     }
+
     let Some(url) = normalize(&unescape(&source[start..i])) else {
         return Ok(None);
     };
     if angle {
         i += 1;
     }
+
     let before_space = i;
     while matches!(bytes.get(i), Some(b' ' | b'\t' | b'\n')) {
         budget.spend(1)?;
         i += 1;
     }
     let mut title = None;
+
     if i > before_space && matches!(bytes.get(i), Some(b'"' | b'\'' | b'(')) {
         let closing = if bytes[i] == b'(' { b')' } else { bytes[i] };
         i += 1;
@@ -87,6 +93,7 @@ pub(crate) fn destination(
             i += 1;
         }
     }
+
     if bytes.get(i) != Some(&b')') {
         return Ok(None);
     }

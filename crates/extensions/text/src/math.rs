@@ -11,6 +11,7 @@ pub fn plugin() -> Plugin {
 fn build() -> Result<Plugin> {
     let mut math = Plugin::new(&markdown_generic_contracts::preset().math);
     math.on::<InlineMathData>(|v, _, _| Ok(v.tex.clone()))?;
+
     math.on::<BlockMathData>(|v, _, ctx| {
         let mut output = v.tex.clone();
         ctx.append(&mut output, "\n")?;

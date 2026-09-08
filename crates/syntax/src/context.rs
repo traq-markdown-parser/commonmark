@@ -17,6 +17,7 @@ pub(super) fn mark_lazy(
     if lines.is_empty() {
         return Ok(());
     }
+
     let state = if let Some(inherited) = view.context::<LazyLines>() {
         budget.spend(inherited.0.len() + lines.len())?;
         let mut state = inherited.clone();

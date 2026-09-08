@@ -5,11 +5,13 @@ use markdown_renderer::{Context, Plugin, Result};
 fn children<T>(_: &T, nodes: &[Node], ctx: &Context<'_>) -> Result<String> {
     ctx.children(nodes)
 }
+
 fn block<T>(_: &T, nodes: &[Node], ctx: &Context<'_>) -> Result<String> {
     let mut output = ctx.children(nodes)?;
     ctx.append(&mut output, "\n")?;
     Ok(output)
 }
+
 pub(crate) fn register(renderer: &mut Plugin) -> Result<()> {
     renderer.on::<Text>(|v, _, _| Ok(v.value.clone()))?;
     renderer.on::<Paragraph>(block)?;
@@ -22,12 +24,14 @@ pub(crate) fn register(renderer: &mut Plugin) -> Result<()> {
     renderer.on::<Softbreak>(|_, _, _| Ok("\n".into()))?;
     renderer.on::<Hardbreak>(|_, _, _| Ok("\n".into()))?;
     renderer.on::<ThematicBreak>(|_, _, _| Ok("\n".into()))?;
+
     renderer.on::<InlineCode>(|v, _, _| Ok(v.literal.clone()))?;
     renderer.on::<CodeBlock>(|v, _, ctx| {
         let mut text = v.literal.clone();
         ctx.append(&mut text, "\n")?;
         Ok(text)
     })?;
+
     renderer.on::<Link>(children)?;
     renderer.on::<List>(|list, nodes, ctx| {
         let mut output = String::new();

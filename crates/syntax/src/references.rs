@@ -38,6 +38,7 @@ pub(crate) fn definition(
         .map(|line| line.trim_start_matches([' ', '\t']))
         .collect::<Vec<_>>()
         .join("\n");
+
     let source = source.trim_matches([' ', '\t', '\n']);
     let Some(end) = label_end(source) else {
         return Ok(None);
@@ -45,14 +46,17 @@ pub(crate) fn definition(
     if source.as_bytes().get(end + 1) != Some(&b':') {
         return Ok(None);
     }
+
     let key = key(&source[1..end]);
     if key.is_empty() {
         return Ok(None);
     }
+
     let tail = source[end + 2..].trim_matches([' ', '\t', '\n']);
     if tail.is_empty() {
         return Ok(None);
     }
+
     let wrapped = format!("({tail})");
     let Some((end, target, title)) = destination(&wrapped, 0, budget, normalize)? else {
         return Ok(None);

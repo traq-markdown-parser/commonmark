@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct InlineMathData {
     pub tex: String,
 }
+
 impl markdown_ast::NodeData for InlineMathData {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType)]
@@ -14,4 +15,5 @@ impl markdown_ast::NodeData for InlineMathData {}
 pub struct BlockMathData {
     pub tex: String,
 }
+
 impl markdown_ast::NodeData for BlockMathData {}
