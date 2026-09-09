@@ -9,6 +9,7 @@ fn escape(value: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
 }
+
 fn plain(nodes: &[Node]) -> String {
     nodes
         .iter()
@@ -25,20 +26,25 @@ fn plain(nodes: &[Node]) -> String {
         })
         .collect()
 }
+
 pub fn render(nodes: &[Node]) -> String {
     render_with(nodes, false)
 }
+
 fn render_with(nodes: &[Node], tight: bool) -> String {
     nodes.iter().map(|node| render_node(node, tight)).collect()
 }
+
 fn title(value: &Option<String>) -> String {
     value
         .as_ref()
         .map(|s| format!(" title=\"{}\"", escape(s)))
         .unwrap_or_default()
 }
+
 fn render_node(node: &Node, tight: bool) -> String {
     let nested = || render_with(&node.children, false);
+
     if let Some(value) = node.get::<Text>() {
         escape(&value.value)
     } else if node.get::<Paragraph>().is_some() {
@@ -53,17 +59,20 @@ fn render_node(node: &Node, tight: bool) -> String {
         format!("<blockquote>\n{}</blockquote>\n", nested())
     } else if let Some(list) = node.get::<List>() {
         let tag = if list.ordered { "ol" } else { "ul" };
+
         let start = if list.ordered && list.start != 1 {
             format!(" start=\"{}\"", list.start)
         } else {
             String::new()
         };
+
         format!(
             "<{tag}{start}>\n{}</{tag}>\n",
             render_with(&node.children, list.tight)
         )
     } else if node.get::<ListItem>().is_some() {
         let mut content = render_with(&node.children, tight);
+
         if node
             .children
             .first()
@@ -71,6 +80,7 @@ fn render_node(node: &Node, tight: bool) -> String {
         {
             content.insert(0, '\n');
         }
+
         if tight && node.children.len() > 1 && node.children[0].get::<Paragraph>().is_some() {
             content = format!(
                 "{}\n{}",
@@ -78,6 +88,7 @@ fn render_node(node: &Node, tight: bool) -> String {
                 render_with(&node.children[1..], tight)
             );
         }
+
         format!("<li>{content}</li>\n")
     } else if let Some(code) = node.get::<CodeBlock>() {
         let info = markdown_commonmark::inlines::entities::unescape(&code.info);
@@ -86,6 +97,7 @@ fn render_node(node: &Node, tight: bool) -> String {
             .next()
             .map(|language| format!(" class=\"language-{}\"", escape(language)))
             .unwrap_or_default();
+
         format!("<pre><code{class}>{}</code></pre>\n", escape(&code.literal))
     } else if node.get::<ThematicBreak>().is_some() {
         "<hr />\n".into()

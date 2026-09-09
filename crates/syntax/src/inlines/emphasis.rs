@@ -5,6 +5,7 @@ use markdown_parser::{
         inline::{InlineAction, InlineInput, InlineMatch, Pairing},
     },
 };
+
 use unicode_general_category::{GeneralCategory as G, get_general_category};
 
 pub fn whitespace(ch: char) -> bool {

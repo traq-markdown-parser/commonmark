@@ -15,27 +15,28 @@ const declaration = Declaration.group("commonmark").new("core");
 export { names as nodes };
 
 export function plugin({
-  validateLink = defaultPolicy,
-  validateImage = validateLink,
-  breaks = false,
-  highlight,
-  linkAttributes = {},
+    validateLink = defaultPolicy,
+    validateImage = validateLink,
+    breaks = false,
+    highlight,
+    linkAttributes = {},
 }: Options = {}) {
-  const result = new Plugin(declaration);
+    const result = new Plugin(declaration);
 
-  registerInlineHandlers(result, {
-    validateLink,
-    validateImage,
-    breaks,
-    linkAttributes,
-  });
-  registerBlockHandlers(result, { highlight });
+    registerInlineHandlers(result, {
+        validateLink,
+        validateImage,
+        breaks,
+        linkAttributes,
+    });
 
-  return result;
+    registerBlockHandlers(result, { highlight });
+
+    return result;
 }
 
 export const html = Object.freeze({ plugin });
 
 export function preset(options?: Options) {
-  return new PresetBuilder().add(plugin(options)).build();
+    return new PresetBuilder().add(plugin(options)).build();
 }

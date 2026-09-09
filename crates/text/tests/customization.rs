@@ -11,16 +11,19 @@ fn renderer(plugin: &Plugin) -> Renderer {
 #[test]
 fn factories_share_identity_and_customization_keeps_defaults_intact() {
     let mut builder = PresetBuilder::new();
+
     builder.add(&markdown_commonmark_text::plugin()).unwrap();
     assert!(builder.add(&markdown_commonmark_text::plugin()).is_err());
     // Factory calls require no caller clone and return the same default snapshot.
     builder.remove(&markdown_commonmark_text::plugin()).unwrap();
 
     let default = renderer(&markdown_commonmark_text::plugin());
+
     let mut custom = markdown_commonmark_text::plugin();
     custom
         .replace::<Link>(|link, _, _| Ok(link.destination.clone()))
         .unwrap();
+
     let document = Document {
         source: String::new(),
         children: vec![Node::new(
@@ -38,11 +41,14 @@ fn factories_share_identity_and_customization_keeps_defaults_intact() {
             )],
         )],
     };
+
     assert_eq!(
         renderer(&custom).render(&document).unwrap(),
         "https://example.test"
     );
+
     assert_eq!(default.render(&document).unwrap(), "label");
+
     assert_eq!(
         renderer(&markdown_commonmark_text::plugin())
             .render(&document)

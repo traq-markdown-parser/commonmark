@@ -1,5 +1,6 @@
 use markdown_ast::{Node, NodeData};
 use serde::{Deserialize, Serialize};
+
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, markdown_definitions::NodeType,
 )]

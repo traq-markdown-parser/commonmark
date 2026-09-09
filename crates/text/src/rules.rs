@@ -26,6 +26,7 @@ pub(crate) fn register(renderer: &mut Plugin) -> Result<()> {
     renderer.on::<ThematicBreak>(|_, _, _| Ok("\n".into()))?;
 
     renderer.on::<InlineCode>(|v, _, _| Ok(v.literal.clone()))?;
+
     renderer.on::<CodeBlock>(|v, _, ctx| {
         let mut text = v.literal.clone();
         ctx.append(&mut text, "\n")?;
@@ -33,6 +34,7 @@ pub(crate) fn register(renderer: &mut Plugin) -> Result<()> {
     })?;
 
     renderer.on::<Link>(children)?;
+
     renderer.on::<List>(|list, nodes, ctx| {
         let mut output = String::new();
         for (index, node) in nodes.iter().enumerate() {

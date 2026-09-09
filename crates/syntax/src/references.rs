@@ -14,7 +14,9 @@ pub(crate) fn label_end(source: &str) -> Option<usize> {
     if !source.starts_with('[') {
         return None;
     }
+
     let mut escaped = false;
+
     for (index, ch) in source[1..].char_indices() {
         if escaped {
             escaped = false;
@@ -27,6 +29,7 @@ pub(crate) fn label_end(source: &str) -> Option<usize> {
             _ => {}
         }
     }
+
     None
 }
 
@@ -41,6 +44,7 @@ pub(crate) fn definition(
     let Some(end) = label_end(source) else {
         return Ok(None);
     };
+
     if source.as_bytes().get(end + 1) != Some(&b':') {
         return Ok(None);
     }
@@ -59,6 +63,7 @@ pub(crate) fn definition(
     let Some((end, target, title)) = destination(&wrapped, 0, budget, normalize)? else {
         return Ok(None);
     };
+
     Ok((end == wrapped.len()).then_some((key, target, title)))
 }
 

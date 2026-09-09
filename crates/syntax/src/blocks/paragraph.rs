@@ -1,4 +1,5 @@
 use super::markers::*;
+
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
@@ -17,6 +18,7 @@ fn setext(input: &BlockInput<'_>, line: usize) -> Result<Option<u8>, ParseError>
     ) {
         return Ok(None);
     }
+
     Ok(underline(input.line(line)))
 }
 
@@ -25,6 +27,7 @@ pub(super) fn paragraph_start(mut line: &str, input: &BlockInput<'_>) -> bool {
         if blank(line) || line.starts_with("    ") || line.starts_with('\t') {
             return false;
         }
+
         if let Some(prefix) = quote(line) {
             line = &line[prefix..];
         } else if let Some(marker) = item(line) {
@@ -67,6 +70,7 @@ pub(super) fn parse(
     } else {
         NodeKind::new(markdown_commonmark_contracts::Paragraph {})
     };
+
     Ok(Some(BlockMatch::node(
         end,
         DraftNode::inline(

@@ -1,4 +1,5 @@
 use super::{Alignment, CellData, RowData, TableData, cells};
+
 use markdown_parser::{
     ParseError,
     engine::{
@@ -12,14 +13,17 @@ pub(super) fn parse(
     budget: &mut Budget,
 ) -> Result<Option<BlockMatch>, ParseError> {
     let first = input.start;
+
     let Some(align) = (first + 1 < input.lines.len())
         .then(|| cells::alignment(input.current(), input.line(first + 1)))
         .flatten()
     else {
         return Ok(None);
     };
+
     let mut children = vec![row(input, first, &align, true, budget)?];
     let mut end = first + 2;
+
     while end < input.lines.len()
         && !input.interrupts(end, Interrupt::BlockBody)
         && !input.line(end).starts_with("    ")
@@ -27,6 +31,7 @@ pub(super) fn parse(
         children.push(row(input, end, &align, false, budget)?);
         end += 1;
     }
+
     Ok(Some(input.matched(
         end,
         markdown_parser::NodeKind::new(TableData {}),
@@ -44,6 +49,7 @@ fn row(
     let source = input.source;
     let line = &input.lines[index];
     let columns = cells::cells(input.line(index), line.start);
+
     let mut children = vec![];
 
     budget.token()?;
@@ -81,12 +87,14 @@ fn cell(
 fn split_escaped_pipes(text: &str, start: usize, end: usize) -> Vec<std::ops::Range<usize>> {
     let mut pieces = vec![];
     let mut begin = start;
+
     for pos in start..end {
         if text.as_bytes()[pos] == b'|' && pos > start && text.as_bytes()[pos - 1] == b'\\' {
             pieces.push(begin..pos - 1);
             begin = pos;
         }
     }
+
     pieces.push(begin..end);
     pieces
 }

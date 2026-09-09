@@ -1,4 +1,5 @@
 use super::markers::*;
+
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
@@ -6,6 +7,7 @@ use markdown_parser::{
         block::{BlockInput, BlockMatch, DraftNode, Interrupt},
     },
 };
+
 use std::ops::Range;
 
 pub(super) fn parse(
@@ -19,6 +21,7 @@ pub(super) fn parse(
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
+
     let mut i = first;
     let mut children = vec![];
     let mut tight = true;
@@ -27,9 +30,11 @@ pub(super) fn parse(
         if thematic(content(source, &lines[i])) {
             break;
         }
+
         let Some(marker) = item(content(source, &lines[i])) else {
             break;
         };
+
         if first_marker.ordered != marker.ordered || first_marker.delimiter != marker.delimiter {
             break;
         }
@@ -37,6 +42,7 @@ pub(super) fn parse(
         let item_start = i;
         let first_content = &content(source, &lines[i])[marker.content..];
         let lazy = super::paragraph::paragraph_start(first_content, input);
+
         let end = if first_content.is_empty()
             && (i + 1 == lines.len() || blank(content(source, &lines[i + 1])))
         {
@@ -44,6 +50,7 @@ pub(super) fn parse(
         } else {
             lines[i].end
         };
+
         let mut ranges = vec![lines[i].start + marker.content..end];
         i += 1;
 
@@ -56,6 +63,7 @@ pub(super) fn parse(
             i,
             &mut ranges,
         );
+
         i = next;
         tight &= item_tight;
 
@@ -82,7 +90,9 @@ pub(super) fn parse(
         }),
         children,
     );
+
     node.finish = Some(finish_list);
+
     Ok(Some(BlockMatch::node(i, node)))
 }
 
@@ -97,31 +107,39 @@ fn collect_continuation(
 ) -> (usize, bool) {
     let source = input.source;
     let lines = input.lines;
+
     let mut item_tight = true;
 
     while i < lines.len() {
         let continuation = content(source, &lines[i]);
+
         if blank(continuation) {
             let next = (i + 1..lines.len()).find(|j| !blank(content(source, &lines[*j])));
+
             let Some(next) = next else {
                 if !blank(first_content) {
                     ranges.extend_from_slice(&lines[i..]);
                 }
                 return (lines.len(), item_tight);
             };
+
             let next_line = content(source, &lines[next]);
+
             if blank(first_content) {
                 item_tight = !item(next_line).is_some_and(|m| {
                     m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
                 });
                 return (next, item_tight);
             }
+
             let next_indent = next_line.len() - next_line.trim_start_matches(' ').len();
+
             if next_indent >= marker.width {
                 ranges.push(lines[i].clone());
                 i += 1;
                 continue;
             }
+
             if item(next_line).is_some_and(|m| {
                 m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
             }) {
@@ -130,10 +148,12 @@ fn collect_continuation(
             } else if !blank(first_content) {
                 ranges.extend_from_slice(&lines[i..next]);
             }
+
             return (next, item_tight);
         }
 
         let indent = continuation.len() - continuation.trim_start_matches(' ').len();
+
         if indent >= marker.width {
             ranges.push(lines[i].start + marker.width..lines[i].end);
         } else if lazy
@@ -144,6 +164,7 @@ fn collect_continuation(
         } else {
             return (i, item_tight);
         }
+
         i += 1;
     }
 
@@ -157,6 +178,7 @@ fn unindent_blank_continuations(
 ) {
     for range in ranges.iter_mut().skip(1) {
         let raw = &source.text()[range.clone()];
+
         if blank(raw.trim_end_matches('\n')) {
             range.start += marker_width.min(raw.len() - raw.trim_start_matches(' ').len());
         }

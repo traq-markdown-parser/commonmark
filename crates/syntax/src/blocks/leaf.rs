@@ -1,4 +1,5 @@
 use super::markers::*;
+
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
@@ -46,6 +47,7 @@ pub(super) fn fenced(
 
 fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> usize {
     let mut end = input.start + 1;
+
     while end < input.lines.len() {
         if fence(input.line(end))
             .is_some_and(|(m, n, info)| m == marker && n >= count && info.is_empty())
@@ -54,11 +56,13 @@ fn closing_fence(input: &BlockInput<'_>, marker: u8, count: usize) -> usize {
         }
         end += 1;
     }
+
     end
 }
 
 fn fenced_literal(input: &BlockInput<'_>, end: usize, indent: usize) -> String {
     let source = input.source;
+
     input.lines[input.start + 1..end]
         .iter()
         .map(|line| {
@@ -98,6 +102,7 @@ pub(super) fn indented(
 fn indented_content(input: &BlockInput<'_>) -> (usize, String) {
     let source = input.source;
     let lines = input.lines;
+
     let mut end = input.start;
     let mut literal = String::new();
 
@@ -105,8 +110,10 @@ fn indented_content(input: &BlockInput<'_>) -> (usize, String) {
     // line follows it.
     while end < lines.len() {
         let raw = &source.text()[lines[end].clone()];
+
         if blank(input.line(end)) {
             let next = (end + 1..lines.len()).find(|i| !blank(input.line(*i)));
+
             if next.is_some_and(|i| input.line(i).starts_with("    ")) {
                 let remove = 4.min(raw.len() - raw.trim_start_matches(' ').len());
                 literal.push_str(&source.literal(lines[end].start + remove..lines[end].end));
@@ -115,6 +122,7 @@ fn indented_content(input: &BlockInput<'_>) -> (usize, String) {
             }
             break;
         }
+
         if raw.starts_with("    ") {
             literal.push_str(&source.literal(lines[end].start + 4..lines[end].end));
             end += 1;
@@ -139,14 +147,18 @@ pub(super) fn atx(
 
     let source = input.source;
     let line = &input.lines[input.start];
+
     let mut end = line.start + input.current().trim_end().len().max(prefix);
+
     let text = &source.text()[line.start + prefix..end];
     let without = text.trim_end_matches('#');
 
     if without.is_empty() || without.ends_with([' ', '\t']) {
         end = line.start + prefix + without.trim_end().len();
     }
+
     let view = source.join(&[line.start + prefix..end])?;
+
     Ok(Some(BlockMatch::node(
         input.start + 1,
         DraftNode::inline(
@@ -171,6 +183,7 @@ pub(super) fn thematic_break(
         .chars()
         .filter(|ch| !ch.is_ascii_whitespace())
         .collect();
+
     Ok(Some(BlockMatch::node(
         input.start + 1,
         DraftNode::leaf(

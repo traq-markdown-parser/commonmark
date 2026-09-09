@@ -9,15 +9,19 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
 
     for (offset, ch) in text[start..].char_indices() {
         let position = start + offset;
+
         if position < quoted_until {
             end = position + ch.len_utf8();
             continue;
         }
+
         if ch.is_whitespace() || ch.is_control() || "<>｜".contains(ch) {
             break;
         }
+
         if ch == '"' || ch == '\'' {
             let tail = &text[position + 1..];
+
             if let Some(close) = tail.find(|c: char| c == ch || c.is_whitespace() || c.is_control())
                 && close > 0
                 && tail.as_bytes()[close] == ch as u8
@@ -32,6 +36,7 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
                 break;
             }
         }
+
         if let Some(close) = match ch {
             '(' => Some(')'),
             '[' => Some(']'),
@@ -45,6 +50,7 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
             }
             pairs.pop();
         }
+
         end = start + offset + ch.len_utf8();
     }
 

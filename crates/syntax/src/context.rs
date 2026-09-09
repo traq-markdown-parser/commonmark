@@ -26,6 +26,8 @@ pub(super) fn mark_lazy(
     } else {
         LazyLines(lines)
     };
+
     view.set_context(state);
+
     Ok(())
 }

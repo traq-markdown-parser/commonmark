@@ -1,6 +1,8 @@
 mod cells;
 mod parse;
+
 pub use markdown_generic_contracts::{Alignment, CellData, RowData, TableData};
+
 use markdown_parser::engine::{
     Plugin,
     block::{BlockRule, Interrupt},

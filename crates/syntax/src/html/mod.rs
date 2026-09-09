@@ -1,5 +1,6 @@
 mod block;
 mod tags;
+
 use markdown_parser::{
     NodeKind,
     engine::{
@@ -22,9 +23,11 @@ pub fn inline_rule() -> &'static InlineRule {
     static RULE: std::sync::LazyLock<InlineRule> = std::sync::LazyLock::new(|| {
         InlineRule::new(b"<", |input, budget| {
             budget.spend(input.tail().len())?;
+
             let Some(end) = tags::inline_end(input.tail()) else {
                 return Ok(None);
             };
+
             Ok(Some(InlineMatch::leaf(
                 input.position + end,
                 NodeKind::new(markdown_commonmark_contracts::HtmlInline {

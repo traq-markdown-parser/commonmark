@@ -14,6 +14,7 @@ pub(super) fn parse(
     let Some(rest) = input.current().strip_prefix("$$") else {
         return Ok(None);
     };
+
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
@@ -54,5 +55,6 @@ fn multiline_tex(input: &BlockInput<'_>, first_line: &str) -> (usize, String) {
         tex.push_str(&source.literal(start..start + next.len()));
         tex.push('\n');
     }
+
     (end, tex)
 }

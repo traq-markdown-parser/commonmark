@@ -4,12 +4,14 @@
 /// Rendering hosts must still enforce their own policy before following a URL.
 pub fn normalize(value: &str) -> Option<String> {
     let lower = value.trim().to_ascii_lowercase();
+
     if ["javascript:", "vbscript:", "file:"]
         .iter()
         .any(|s| lower.starts_with(s))
     {
         return None;
     }
+
     if lower.starts_with("data:")
         && !["gif", "png", "jpeg", "webp"]
             .iter()
@@ -17,6 +19,7 @@ pub fn normalize(value: &str) -> Option<String> {
     {
         return None;
     }
+
     Some(encode(value))
 }
 
@@ -29,6 +32,7 @@ pub fn encode(value: &str) -> String {
     )
     .into_owned()
 }
+
 /// Decode a URL for its text label, preserving reserved ASCII characters.
 pub fn label(value: &str) -> String {
     mdurl::urlencode::decode(
@@ -37,8 +41,10 @@ pub fn label(value: &str) -> String {
     )
     .into_owned()
 }
+
 fn host(value: &str, decode: bool) -> String {
     let mut url = mdurl::parse_url(value);
+
     if matches!(
         url.protocol.as_deref(),
         None | Some("http:" | "https:" | "mailto:")
@@ -62,5 +68,6 @@ fn host(value: &str, decode: bool) -> String {
             .collect::<Vec<_>>()
             .join(".");
     }
+
     url.to_string()
 }

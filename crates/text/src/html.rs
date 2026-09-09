@@ -16,5 +16,6 @@ fn build() -> Result<Plugin> {
         ctx.append(&mut text, "\n")?;
         Ok(text)
     })?;
+
     Ok(renderer)
 }

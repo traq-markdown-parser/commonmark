@@ -1,4 +1,5 @@
 use super::{markers::*, paragraph::paragraph_start};
+
 use markdown_parser::{
     NodeKind, ParseError,
     engine::{
@@ -18,6 +19,7 @@ pub fn parse(
     let source = input.source;
     let lines = input.lines;
     let first = input.start;
+
     let mut end = first;
     let mut ranges = vec![];
     let mut lazy_lines = vec![];
@@ -26,6 +28,7 @@ pub fn parse(
     while end < lines.len() {
         let next = input.line(end);
         let indent = next.len() - next.trim_start_matches(' ').len();
+
         if let Some(prefix) = quote(&next[indent..]).map(|width| width + indent) {
             lazy = paragraph_start(&next[prefix..], input);
             ranges.push(lines[end].start + prefix..lines[end].end);
@@ -35,11 +38,13 @@ pub fn parse(
         } else {
             break;
         }
+
         end += 1;
     }
 
     let mut view = source.join(&ranges)?;
     super::super::context::mark_lazy(&mut view, lazy_lines, budget)?;
+
     Ok(Some(BlockMatch::node(
         end,
         DraftNode::blocks(

@@ -14,8 +14,10 @@ pub fn plugin() -> Plugin {
 
 fn build() -> Result<Plugin> {
     let mut table = Plugin::new(&markdown_generic_contracts::preset().table);
+
     table.on::<TableData>(children)?;
     table.on::<CellData>(children)?;
+
     table.on::<RowData>(|_, nodes, ctx| {
         let mut output = String::new();
         for (i, node) in nodes.iter().enumerate() {
@@ -27,5 +29,6 @@ fn build() -> Result<Plugin> {
         ctx.append(&mut output, "\n")?;
         Ok(output)
     })?;
+
     Ok(table)
 }

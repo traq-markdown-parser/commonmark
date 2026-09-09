@@ -1,6 +1,8 @@
 use markdown_commonmark_contracts::LinkForm;
+
 mod path;
 mod recognize;
+
 use markdown_parser::{
     Node, NodeKind,
     engine::{
@@ -15,19 +17,23 @@ pub fn inline_rule() -> &'static InlineRule {
             if input.inside_brackets {
                 return Ok(None);
             }
+
             let tail = input.tail();
             let scheme = ["http://", "https://", "ftp://"].iter().any(|prefix| {
                 tail.get(..prefix.len())
                     .is_some_and(|s| s.eq_ignore_ascii_case(prefix))
             });
+
             if !scheme {
                 return Ok(None);
             }
+
             // An anchored candidate replaces the prototype's unconditional pre-scan.
             budget.spend(tail.len())?;
             let Some(found) = recognize::at(input.source.text(), input.position) else {
                 return Ok(None);
             };
+
             let span = input.source.span_for(found.start..found.end)?;
             Ok(Some(InlineMatch {
                 end: found.end,
@@ -59,6 +65,7 @@ pub fn text_rule() -> &'static TextRule {
                 .map(|found| {
                     let start = input.range.start + found.start;
                     let end = input.range.start + found.end;
+
                     Ok(TextMatch {
                         start,
                         end,

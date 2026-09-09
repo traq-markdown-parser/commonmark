@@ -1,5 +1,7 @@
 use markdown_commonmark::inlines::emphasis::paired;
+
 pub use markdown_generic_contracts::StrikethroughData;
+
 use markdown_parser::{
     NodeKind,
     engine::{Plugin, inline::InlineRule},

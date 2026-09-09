@@ -7,16 +7,18 @@ use std::sync::LazyLock;
 // deliberately independent of DNS and the current public suffix registry.
 static TLD: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
-    "(?i)^(?:biz|com|edu|gov|net|org|pro|web|xxx|aero|asia|coop|info|museum|name|shop|рф|app|dev|games|tech|show|xn--[a-z0-9-]{1,59}|",
-    "a[cdefgilmnoqrstuwxz]|b[abdefghijmnorstvwyz]|c[acdfghiklmnoruvwxyz]|d[ejkmoz]|e[cegrstu]|f[ijkmor]|g[abdefghilmnpqrstuwy]|h[kmnrtu]|i[delmnoqrst]|j[emop]|k[eghimnprwyz]|l[abcikrstuvy]|m[acdeghklmnopqrstuvwxyz]|n[acefgilopruz]|om|p[aefghklmnrstwy]|qa|r[eosuw]|s[abcdeghijklmnortuvxyz]|t[cdfghjklmnortvwz]|u[agksyz]|v[aceginu]|w[fs]|y[et]|z[amw])$"
-)).unwrap()
+        "(?i)^(?:biz|com|edu|gov|net|org|pro|web|xxx|aero|asia|coop|info|museum|name|shop|рф|app|dev|games|tech|show|xn--[a-z0-9-]{1,59}|",
+        "a[cdefgilmnoqrstuwxz]|b[abdefghijmnorstvwyz]|c[acdfghiklmnoruvwxyz]|d[ejkmoz]|e[cegrstu]|f[ijkmor]|g[abdefghilmnpqrstuwy]|h[kmnrtu]|i[delmnoqrst]|j[emop]|k[eghimnprwyz]|l[abcikrstuvy]|m[acdeghklmnopqrstuvwxyz]|n[acefgilopruz]|om|p[aefghklmnrstwy]|qa|r[eosuw]|s[abcdeghijklmnortuvxyz]|t[cdfghjklmnortvwz]|u[agksyz]|v[aceginu]|w[fs]|y[et]|z[amw])$"
+    )).unwrap()
 });
+
 pub(crate) struct Match {
     pub start: usize,
     pub end: usize,
     pub destination: String,
     pub label: String,
 }
+
 pub(super) fn find(text: &str) -> Vec<Match> {
     find_impl(text, None)
 }
@@ -28,10 +30,12 @@ pub(super) fn at(text: &str, position: usize) -> Option<Match> {
 fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
     static CANDIDATE: LazyLock<Regex> = LazyLock::new(|| {
         let letter = r"[^\p{P}\p{Z}\p{C}<>｜]";
+
         // Check the 63-character domain limit below; bounded Unicode repetitions
         // unnecessarily inflate the regex automaton in Wasm.
         let domain = format!(r"{letter}(?:(?:{letter}|-)*{letter})?");
         let host = format!(r"{domain}(?:\.{domain})*");
+
         // Reject invalid TLDs during matching, so a failed fuzzy host cannot
         // consume an explicit scheme later in the same run of text.
         let tld = TLD
@@ -40,6 +44,7 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
             .unwrap()
             .strip_suffix('$')
             .unwrap();
+
         let authority =
             format!(r"//(?:[^\s@/\[\]()<>]{{1,50}}@)?(?P<host>{host})(?P<port>:[0-9]{{1,5}})?");
         Regex::new(&format!(r#"(?i)(?:(?P<scheme>https?:|ftp:)?{authority}|(?P<mail>mailto:)?(?P<email>[-;:&=+$,.a-z0-9_][-;:&=+$,".a-z0-9_]{{0,63}}@{host})|(?P<fuzzy>{domain}(?:\.{domain})*\.{tld})(?P<fport>:[0-9]{{1,5}})?)"#)).unwrap()
@@ -70,6 +75,7 @@ fn match_candidate(
 ) -> Option<Match> {
     let matched = candidate.get(0)?;
     let start = matched.start();
+
     if start < *occupied {
         return None;
     }
@@ -84,10 +90,12 @@ fn match_candidate(
     {
         return None;
     }
+
     let relative = candidate.name("host").is_some() && !explicit;
     if !explicit && before.is_some_and(|c| ".:/-_@".contains(c)) {
         return None;
     }
+
     if explicit && before.is_some_and(|c| c.is_ascii_alphanumeric() || "+-".contains(c)) {
         return None;
     }
@@ -97,6 +105,7 @@ fn match_candidate(
         .or_else(|| candidate.name("fuzzy"))
         .or_else(|| candidate.name("email"))?
         .as_str();
+
     if host
         .rsplit('@')
         .next()?
@@ -105,11 +114,13 @@ fn match_candidate(
     {
         return None;
     }
+
     if (candidate.name("fuzzy").is_some() || email && candidate.name("mail").is_none())
         && !TLD.is_match(host.rsplit('.').next()?)
     {
         return None;
     }
+
     if relative && !host.contains('.') {
         return None;
     }
@@ -121,6 +132,7 @@ fn match_candidate(
     }
 
     let mut end = matched.end();
+
     // A numeric port can end before adjacent Japanese prose. Keep rejecting
     // truncated ASCII ports (3000abc, 123456) and invalid hosts.
     if !valid_terminator(text, &candidate, end, explicit) {
@@ -140,8 +152,10 @@ fn match_candidate(
     } else {
         ""
     };
+
     let target = format!("{prefix}{raw}");
     let normalized_label = label(&target);
+
     Some(Match {
         start,
         end,
@@ -161,16 +175,20 @@ fn valid_terminator(
 ) -> bool {
     static TERMINATOR: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^(?:[\p{P}\p{Z}\p{C}<>｜]|$)").unwrap());
+
     let prose_after_port = explicit
         && candidate.name("port").is_some()
         && text[end..].chars().next().is_some_and(|c| !c.is_ascii());
+
     if !TERMINATOR.is_match(&text[end..]) && !prose_after_port {
         return false;
     }
+
     if let Some(tail) = text[end..].strip_prefix('.')
         && (tail.starts_with('-') || !TERMINATOR.is_match(tail))
     {
         return false;
     }
+
     !text[end..].starts_with(['-', '_'])
 }

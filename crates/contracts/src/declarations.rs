@@ -12,7 +12,7 @@ pub fn preset() -> &'static Contracts {
         let commonmark = Plugin::group("CommonMark");
         Contracts {
             plugin: commonmark.new("Core"),
-            html: commonmark.new("html"),
+            html: commonmark.new("Html"),
         }
     });
     &PRESET

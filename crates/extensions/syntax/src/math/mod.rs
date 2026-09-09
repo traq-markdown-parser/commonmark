@@ -1,5 +1,6 @@
 mod block;
 mod inline;
+
 pub use markdown_generic_contracts::{BlockMathData, InlineMathData};
 use markdown_parser::engine::{Plugin, block::BlockRule, inline::InlineRule};
 
