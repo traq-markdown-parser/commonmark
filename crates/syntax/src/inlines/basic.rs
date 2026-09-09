@@ -78,7 +78,26 @@ pub(super) fn code(
         budget.spend(1)?;
         open_end += 1;
     }
-    let mut end = open_end;
+    let Some((start, end)) = closing_code(bytes, open_end, open_end - pos, budget)? else {
+        return Ok(Some(InlineMatch::literal(open_end)));
+    };
+
+    let mut literal = source[open_end..start].replace('\n', " ");
+    if literal.starts_with(' ') && literal.ends_with(' ') && literal.bytes().any(|b| b != b' ') {
+        literal = literal[1..literal.len() - 1].into();
+    }
+    Ok(Some(InlineMatch::leaf(
+        end,
+        NodeKind::new(markdown_commonmark_contracts::InlineCode { literal }),
+    )))
+}
+
+fn closing_code(
+    bytes: &[u8],
+    mut end: usize,
+    length: usize,
+    budget: &mut Budget,
+) -> Result<Option<(usize, usize)>, ParseError> {
     // Searches are bounded by the shared work budget, including failed closers.
     while end < bytes.len() {
         budget.spend(1)?;
@@ -86,24 +105,15 @@ pub(super) fn code(
             end += 1;
             continue;
         }
+
         let start = end;
         while bytes.get(end) == Some(&b'`') {
             budget.spend(1)?;
             end += 1;
         }
-        if end - start == open_end - pos {
-            let mut literal = source[open_end..start].replace('\n', " ");
-            if literal.starts_with(' ')
-                && literal.ends_with(' ')
-                && literal.bytes().any(|b| b != b' ')
-            {
-                literal = literal[1..literal.len() - 1].into();
-            }
-            return Ok(Some(InlineMatch::leaf(
-                end,
-                NodeKind::new(markdown_commonmark_contracts::InlineCode { literal }),
-            )));
+        if end - start == length {
+            return Ok(Some((start, end)));
         }
     }
-    Ok(Some(InlineMatch::literal(open_end)))
+    Ok(None)
 }

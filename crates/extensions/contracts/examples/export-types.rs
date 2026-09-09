@@ -6,13 +6,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_out_dir(&directory)
         .with_import_extension(Some("js"));
     let mut nodes = serde_json::Map::new();
-    macro_rules! register { ($($ty:ident),*) => {$(
-        <$ty as ts_rs::TS>::export_all(&config)?;
-        let schema = schemars::generate::SchemaSettings::default()
-            .with(|settings| settings.contract = schemars::generate::Contract::Serialize)
-            .into_generator().into_root_schema_for::<$ty>();
-        nodes.insert($ty::type_key(), serde_json::json!({"group":"generic","schema":schema}));
-    )*}; }
+    macro_rules! register {
+        ($($ty:ident),*) => {
+            $(
+                <$ty as ts_rs::TS>::export_all(&config)?;
+                let schema = schemars::generate::SchemaSettings::default()
+                    .with(|settings| settings.contract = schemars::generate::Contract::Serialize)
+                    .into_generator()
+                    .into_root_schema_for::<$ty>();
+                nodes.insert(
+                    $ty::type_key(),
+                    serde_json::json!({"group":"generic","schema":schema}),
+                );
+            )*
+        };
+    }
     register!(
         InlineMathData,
         BlockMathData,

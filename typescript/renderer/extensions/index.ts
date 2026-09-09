@@ -21,40 +21,44 @@ function table(node: Node, ctx: RenderContext) {
 
     return row;
   });
-  const row = (node: Node & { data: RowData }) =>
-    "<tr>\n" +
-    (node.children ?? [])
-      .map((cell) => {
-        if (!isKnownNode(cell) || cell.kind !== names.Cell)
-          throw new TypeError("Invalid table cell");
-
-        const tag = node.data.header ? "th" : "td";
-        const attrs = cell.data.alignment
-          ? attributes([["style", "text-align:" + cell.data.alignment]])
-          : "";
-        return (
-          "<" +
-          tag +
-          attrs +
-          ">" +
-          ctx.inline(cell.children) +
-          "</" +
-          tag +
-          ">\n"
-        );
-      })
-      .join("") +
-    "</tr>\n";
 
   const head = rows.filter((r) => r.data.header),
     body = rows.filter((r) => !r.data.header);
   return (
     "<table>\n<thead>\n" +
-    head.map(row).join("") +
+    head.map((node) => row(node, ctx)).join("") +
     "</thead>\n" +
-    (body.length ? "<tbody>\n" + body.map(row).join("") + "</tbody>\n" : "") +
+    (body.length
+      ? "<tbody>\n" + body.map((node) => row(node, ctx)).join("") + "</tbody>\n"
+      : "") +
     "</table>\n"
   );
+}
+
+function row(node: Node & { data: RowData }, ctx: RenderContext) {
+  const tag = node.data.header ? "th" : "td";
+  const cells = (node.children ?? [])
+    .map((cell) => {
+      if (!isKnownNode(cell) || cell.kind !== names.Cell)
+        throw new TypeError("Invalid table cell");
+
+      const attrs = cell.data.alignment
+        ? attributes([["style", "text-align:" + cell.data.alignment]])
+        : "";
+      return (
+        "<" +
+        tag +
+        attrs +
+        ">" +
+        ctx.inline(cell.children) +
+        "</" +
+        tag +
+        ">\n"
+      );
+    })
+    .join("");
+
+  return "<tr>\n" + cells + "</tr>\n";
 }
 
 const declaration = Declaration.group("generic").new("presentation");

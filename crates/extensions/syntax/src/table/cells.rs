@@ -32,28 +32,32 @@ pub(super) fn alignment(header: &str, delimiter: &str) -> Option<Vec<Option<Alig
     {
         return None;
     }
+
     let columns = cells(delimiter, 0);
     if columns.len() != cells(header, 0).len() || columns.is_empty() {
         return None;
     }
+
     columns
         .into_iter()
-        .map(|range| {
-            let cell = delimiter[range].trim();
-            let dashes = cell.trim_start_matches(':').trim_end_matches(':');
-            if dashes.is_empty()
-                || !dashes.bytes().all(|b| b == b'-')
-                || cell.starts_with("::")
-                || cell.ends_with("::")
-            {
-                return None;
-            }
-            Some(match (cell.starts_with(':'), cell.ends_with(':')) {
-                (true, true) => Some(Alignment::Center),
-                (true, false) => Some(Alignment::Left),
-                (false, true) => Some(Alignment::Right),
-                _ => None,
-            })
-        })
+        .map(|range| alignment_cell(delimiter, range))
         .collect()
+}
+
+fn alignment_cell(delimiter: &str, range: Range<usize>) -> Option<Option<Alignment>> {
+    let cell = delimiter[range].trim();
+    let dashes = cell.trim_start_matches(':').trim_end_matches(':');
+    if dashes.is_empty()
+        || !dashes.bytes().all(|b| b == b'-')
+        || cell.starts_with("::")
+        || cell.ends_with("::")
+    {
+        return None;
+    }
+    Some(match (cell.starts_with(':'), cell.ends_with(':')) {
+        (true, true) => Some(Alignment::Center),
+        (true, false) => Some(Alignment::Left),
+        (false, true) => Some(Alignment::Right),
+        _ => None,
+    })
 }

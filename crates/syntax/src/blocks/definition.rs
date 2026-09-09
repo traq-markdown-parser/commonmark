@@ -8,6 +8,9 @@ use markdown_parser::{
     },
 };
 
+type DefinitionValue = (String, String, Option<String>);
+type DefinitionMatch = (usize, DefinitionValue);
+
 pub(super) fn parse(
     input: &BlockInput<'_>,
     budget: &mut Budget,
@@ -18,6 +21,31 @@ pub(super) fn parse(
         return Ok(None);
     }
 
+    let lines = input.lines;
+    let Some((mut end, (key, destination, title))) = find_definition(input, budget, normalize)?
+    else {
+        return Ok(None);
+    };
+
+    if end < lines.len() && blank(input.line(end)) {
+        end += 1;
+    }
+
+    let mut result = BlockMatch::ignore(end);
+    result.definitions.push(Definition {
+        key,
+        destination,
+        title,
+    });
+    Ok(Some(result))
+}
+
+fn find_definition(
+    input: &BlockInput<'_>,
+    budget: &mut Budget,
+    normalize: fn(&str) -> Option<String>,
+) -> Result<Option<DefinitionMatch>, ParseError> {
+    let line = input.current();
     let first = input.start;
     let lines = input.lines;
     let mut last = first + 1;
@@ -27,6 +55,7 @@ pub(super) fn parse(
         if last > first + 1 && input.interrupts(last - 1, Interrupt::Reference) {
             break;
         }
+
         let text = input
             .source
             .literal(lines[first].start..lines[last - 1].end);
@@ -51,18 +80,5 @@ pub(super) fn parse(
         last += 1;
     }
 
-    let Some((mut end, (key, destination, title))) = found else {
-        return Ok(None);
-    };
-    if end < lines.len() && blank(input.line(end)) {
-        end += 1;
-    }
-
-    let mut result = BlockMatch::ignore(end);
-    result.definitions.push(Definition {
-        key,
-        destination,
-        title,
-    });
-    Ok(Some(result))
+    Ok(found)
 }

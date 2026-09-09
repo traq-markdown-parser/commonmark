@@ -9,6 +9,7 @@ pub(crate) fn key(value: &str) -> String {
         .to_lowercase()
         .to_uppercase()
 }
+
 pub(crate) fn label_end(source: &str) -> Option<usize> {
     if !source.starts_with('[') {
         return None;
@@ -28,18 +29,15 @@ pub(crate) fn label_end(source: &str) -> Option<usize> {
     }
     None
 }
+
 pub(crate) fn definition(
     source: &str,
     budget: &mut Budget,
     normalize: fn(&str) -> Option<String>,
 ) -> Result<Option<(String, String, Option<String>)>, ParseError> {
-    let source = source
-        .lines()
-        .map(|line| line.trim_start_matches([' ', '\t']))
-        .collect::<Vec<_>>()
-        .join("\n");
-
+    let source = normalize_definition(source);
     let source = source.trim_matches([' ', '\t', '\n']);
+
     let Some(end) = label_end(source) else {
         return Ok(None);
     };
@@ -62,4 +60,12 @@ pub(crate) fn definition(
         return Ok(None);
     };
     Ok((end == wrapped.len()).then_some((key, target, title)))
+}
+
+fn normalize_definition(source: &str) -> String {
+    source
+        .lines()
+        .map(|line| line.trim_start_matches([' ', '\t']))
+        .collect::<Vec<_>>()
+        .join("\n")
 }

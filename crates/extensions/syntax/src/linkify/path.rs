@@ -53,16 +53,26 @@ pub(super) fn path_end(text: &str, start: usize) -> usize {
     }
 
     let stopped_at_quote = text[end..].starts_with(['\'', '"']);
-    while end > start
-        && (text[..end].ends_with('*')
-            || !stopped_at_quote && text[..end].ends_with(['.', ',', ';', '!', '?']))
-    {
-        end -= 1;
-    }
+    end = trim_trailing_punctuation(text, start, end, stopped_at_quote);
 
     if end == start + 1 && !text[start..].starts_with('/') {
         start
     } else {
         end
     }
+}
+
+fn trim_trailing_punctuation(
+    text: &str,
+    start: usize,
+    mut end: usize,
+    stopped_at_quote: bool,
+) -> usize {
+    while end > start
+        && (text[..end].ends_with('*')
+            || !stopped_at_quote && text[..end].ends_with(['.', ',', ';', '!', '?']))
+    {
+        end -= 1;
+    }
+    end
 }

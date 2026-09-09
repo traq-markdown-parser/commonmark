@@ -59,101 +59,118 @@ fn find_impl(text: &str, position: Option<usize>) -> Vec<Match> {
         };
 
     candidates
-        .filter_map(|m| {
-            let matched = m.get(0)?;
-            let start = matched.start();
-            if start < occupied {
-                return None;
-            }
-
-            let before = text[..start].chars().next_back();
-            let explicit = m.name("scheme").is_some();
-            let email = m.name("email").is_some();
-            if email
-                && m.name("mail").is_none()
-                && before.is_some_and(|c| c.is_ascii_alphanumeric() || "._%+-/@".contains(c))
-            {
-                return None;
-            }
-            let relative = m.name("host").is_some() && !explicit;
-            if !explicit && before.is_some_and(|c| ".:/-_@".contains(c)) {
-                return None;
-            }
-            if explicit && before.is_some_and(|c| c.is_ascii_alphanumeric() || "+-".contains(c)) {
-                return None;
-            }
-            let host = m
-                .name("host")
-                .or_else(|| m.name("fuzzy"))
-                .or_else(|| m.name("email"))?
-                .as_str();
-            if host
-                .rsplit('@')
-                .next()?
-                .split('.')
-                .any(|part| part.encode_utf16().count() > 63)
-            {
-                return None;
-            }
-            if (m.name("fuzzy").is_some() || email && m.name("mail").is_none())
-                && !TLD.is_match(host.rsplit('.').next()?)
-            {
-                return None;
-            }
-            if relative && !host.contains('.') {
-                return None;
-            }
-
-            if let Some(port) = m.name("port").or_else(|| m.name("fport"))
-                && port.as_str()[1..].parse::<u32>().ok()? > 65535
-            {
-                return None;
-            }
-
-            let mut end = matched.end();
-            static TERMINATOR: LazyLock<Regex> =
-                LazyLock::new(|| Regex::new(r"^(?:[\p{P}\p{Z}\p{C}<>｜]|$)").unwrap());
-            // A numeric port can end before adjacent Japanese prose. Keep
-            // rejecting truncated ASCII ports (3000abc, 123456) and invalid hosts.
-            let prose_after_port = explicit
-                && m.name("port").is_some()
-                && text[end..].chars().next().is_some_and(|c| !c.is_ascii());
-            if !TERMINATOR.is_match(&text[end..]) && !prose_after_port {
-                return None;
-            }
-            if let Some(tail) = text[end..].strip_prefix('.')
-                && (tail.starts_with('-') || !TERMINATOR.is_match(tail))
-            {
-                return None;
-            }
-            if text[end..].starts_with(['-', '_']) {
-                return None;
-            }
-
-            if !email {
-                end = path_end(text, end);
-            }
-            occupied = end;
-            let raw = &text[start..end];
-            let prefix = if email && m.name("mail").is_none() {
-                "mailto:"
-            } else if m.name("fuzzy").is_some() {
-                "http://"
-            } else {
-                ""
-            };
-
-            let target = format!("{prefix}{raw}");
-            let normalized_label = label(&target);
-            Some(Match {
-                start,
-                end,
-                destination: normalize(&target)?,
-                label: normalized_label
-                    .strip_prefix(prefix)
-                    .unwrap_or(&normalized_label)
-                    .into(),
-            })
-        })
+        .filter_map(|candidate| match_candidate(text, candidate, &mut occupied))
         .collect()
+}
+
+fn match_candidate(
+    text: &str,
+    candidate: regex::Captures<'_>,
+    occupied: &mut usize,
+) -> Option<Match> {
+    let matched = candidate.get(0)?;
+    let start = matched.start();
+    if start < *occupied {
+        return None;
+    }
+
+    let before = text[..start].chars().next_back();
+    let explicit = candidate.name("scheme").is_some();
+    let email = candidate.name("email").is_some();
+
+    if email
+        && candidate.name("mail").is_none()
+        && before.is_some_and(|c| c.is_ascii_alphanumeric() || "._%+-/@".contains(c))
+    {
+        return None;
+    }
+    let relative = candidate.name("host").is_some() && !explicit;
+    if !explicit && before.is_some_and(|c| ".:/-_@".contains(c)) {
+        return None;
+    }
+    if explicit && before.is_some_and(|c| c.is_ascii_alphanumeric() || "+-".contains(c)) {
+        return None;
+    }
+
+    let host = candidate
+        .name("host")
+        .or_else(|| candidate.name("fuzzy"))
+        .or_else(|| candidate.name("email"))?
+        .as_str();
+    if host
+        .rsplit('@')
+        .next()?
+        .split('.')
+        .any(|part| part.encode_utf16().count() > 63)
+    {
+        return None;
+    }
+    if (candidate.name("fuzzy").is_some() || email && candidate.name("mail").is_none())
+        && !TLD.is_match(host.rsplit('.').next()?)
+    {
+        return None;
+    }
+    if relative && !host.contains('.') {
+        return None;
+    }
+
+    if let Some(port) = candidate.name("port").or_else(|| candidate.name("fport"))
+        && port.as_str()[1..].parse::<u32>().ok()? > 65535
+    {
+        return None;
+    }
+
+    let mut end = matched.end();
+    // A numeric port can end before adjacent Japanese prose. Keep rejecting
+    // truncated ASCII ports (3000abc, 123456) and invalid hosts.
+    if !valid_terminator(text, &candidate, end, explicit) {
+        return None;
+    }
+
+    if !email {
+        end = path_end(text, end);
+    }
+    *occupied = end;
+
+    let raw = &text[start..end];
+    let prefix = if email && candidate.name("mail").is_none() {
+        "mailto:"
+    } else if candidate.name("fuzzy").is_some() {
+        "http://"
+    } else {
+        ""
+    };
+    let target = format!("{prefix}{raw}");
+    let normalized_label = label(&target);
+    Some(Match {
+        start,
+        end,
+        destination: normalize(&target)?,
+        label: normalized_label
+            .strip_prefix(prefix)
+            .unwrap_or(&normalized_label)
+            .into(),
+    })
+}
+
+fn valid_terminator(
+    text: &str,
+    candidate: &regex::Captures<'_>,
+    end: usize,
+    explicit: bool,
+) -> bool {
+    static TERMINATOR: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^(?:[\p{P}\p{Z}\p{C}<>｜]|$)").unwrap());
+    let prose_after_port = explicit
+        && candidate.name("port").is_some()
+        && text[end..].chars().next().is_some_and(|c| !c.is_ascii());
+    if !TERMINATOR.is_match(&text[end..]) && !prose_after_port {
+        return false;
+    }
+    if let Some(tail) = text[end..].strip_prefix('.')
+        && (tail.starts_with('-') || !TERMINATOR.is_match(tail))
+    {
+        return false;
+    }
+    !text[end..].starts_with(['-', '_'])
 }

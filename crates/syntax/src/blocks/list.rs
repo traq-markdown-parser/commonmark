@@ -6,6 +6,7 @@ use markdown_parser::{
         block::{BlockInput, BlockMatch, DraftNode, Interrupt},
     },
 };
+use std::ops::Range;
 
 pub(super) fn parse(
     input: &BlockInput<'_>,
@@ -46,72 +47,21 @@ pub(super) fn parse(
         let mut ranges = vec![lines[i].start + marker.content..end];
         i += 1;
 
-        while i < lines.len() {
-            let continuation = content(source, &lines[i]);
-            if blank(continuation) {
-                let next = (i + 1..lines.len()).find(|j| !blank(content(source, &lines[*j])));
-                let Some(next) = next else {
-                    if !blank(first_content) {
-                        ranges.extend_from_slice(&lines[i..]);
-                    }
-                    i = lines.len();
-                    break;
-                };
-                let next_line = content(source, &lines[next]);
-                if blank(first_content) {
-                    tight &= !item(next_line).is_some_and(|m| {
-                        m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
-                    });
-                    i = next;
-                    break;
-                }
-                let next_indent = next_line.len() - next_line.trim_start_matches(' ').len();
-                if next_indent >= marker.width {
-                    ranges.push(lines[i].clone());
-                    i += 1;
-                    continue;
-                }
-                if item(next_line).is_some_and(|m| {
-                    m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
-                }) {
-                    tight = false;
-                    ranges.extend_from_slice(&lines[i..next]);
-                    i = next;
-                } else {
-                    if !blank(first_content) {
-                        ranges.extend_from_slice(&lines[i..next]);
-                    }
-                    i = next;
-                }
-                if blank(first_content) {
-                    i = next;
-                }
-                break;
-            }
-            let indent = continuation.len() - continuation.trim_start_matches(' ').len();
-            if indent >= marker.width {
-                ranges.push(lines[i].start + marker.width..lines[i].end);
-            } else if lazy
-                && !input.interrupts_text(continuation, None, Interrupt::LazyContinuation)
-                && item(continuation).is_none()
-            {
-                ranges.push(lines[i].clone());
-            } else {
-                break;
-            }
-            i += 1;
-        }
+        let (next, item_tight) = collect_continuation(
+            input,
+            &first_marker,
+            &marker,
+            first_content,
+            lazy,
+            i,
+            &mut ranges,
+        );
+        i = next;
+        tight &= item_tight;
 
         // Blank continuation lines still lose the list's indentation,
         // including when they become literal content of a fenced block.
-        for range in ranges.iter_mut().skip(1) {
-            let raw = &source.text()[range.clone()];
-            if blank(raw.trim_end_matches('\n')) {
-                range.start += marker
-                    .width
-                    .min(raw.len() - raw.trim_start_matches(' ').len());
-            }
-        }
+        unindent_blank_continuations(source, marker.width, &mut ranges);
 
         budget.token()?;
         children.push(DraftNode::blocks(
@@ -134,6 +84,83 @@ pub(super) fn parse(
     );
     node.finish = Some(finish_list);
     Ok(Some(BlockMatch::node(i, node)))
+}
+
+fn collect_continuation(
+    input: &BlockInput<'_>,
+    first_marker: &Marker,
+    marker: &Marker,
+    first_content: &str,
+    lazy: bool,
+    mut i: usize,
+    ranges: &mut Vec<Range<usize>>,
+) -> (usize, bool) {
+    let source = input.source;
+    let lines = input.lines;
+    let mut item_tight = true;
+
+    while i < lines.len() {
+        let continuation = content(source, &lines[i]);
+        if blank(continuation) {
+            let next = (i + 1..lines.len()).find(|j| !blank(content(source, &lines[*j])));
+            let Some(next) = next else {
+                if !blank(first_content) {
+                    ranges.extend_from_slice(&lines[i..]);
+                }
+                return (lines.len(), item_tight);
+            };
+            let next_line = content(source, &lines[next]);
+            if blank(first_content) {
+                item_tight = !item(next_line).is_some_and(|m| {
+                    m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
+                });
+                return (next, item_tight);
+            }
+            let next_indent = next_line.len() - next_line.trim_start_matches(' ').len();
+            if next_indent >= marker.width {
+                ranges.push(lines[i].clone());
+                i += 1;
+                continue;
+            }
+            if item(next_line).is_some_and(|m| {
+                m.ordered == first_marker.ordered && m.delimiter == first_marker.delimiter
+            }) {
+                item_tight = false;
+                ranges.extend_from_slice(&lines[i..next]);
+            } else if !blank(first_content) {
+                ranges.extend_from_slice(&lines[i..next]);
+            }
+            return (next, item_tight);
+        }
+
+        let indent = continuation.len() - continuation.trim_start_matches(' ').len();
+        if indent >= marker.width {
+            ranges.push(lines[i].start + marker.width..lines[i].end);
+        } else if lazy
+            && !input.interrupts_text(continuation, None, Interrupt::LazyContinuation)
+            && item(continuation).is_none()
+        {
+            ranges.push(lines[i].clone());
+        } else {
+            return (i, item_tight);
+        }
+        i += 1;
+    }
+
+    (i, item_tight)
+}
+
+fn unindent_blank_continuations(
+    source: &markdown_parser::engine::source::SourceView,
+    marker_width: usize,
+    ranges: &mut [Range<usize>],
+) {
+    for range in ranges.iter_mut().skip(1) {
+        let raw = &source.text()[range.clone()];
+        if blank(raw.trim_end_matches('\n')) {
+            range.start += marker_width.min(raw.len() - raw.trim_start_matches(' ').len());
+        }
+    }
 }
 
 fn finish_list(node: &mut DraftNode) {

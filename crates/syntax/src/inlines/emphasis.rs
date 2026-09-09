@@ -8,8 +8,19 @@ use markdown_parser::{
 use unicode_general_category::{GeneralCategory as G, get_general_category};
 
 pub fn whitespace(ch: char) -> bool {
-    matches!(ch, '\t'..='\r' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}')
+    matches!(
+        ch,
+        '\t'..='\r'
+            | ' '
+            | '\u{a0}'
+            | '\u{1680}'
+            | '\u{2000}'..='\u{200a}'
+            | '\u{202f}'
+            | '\u{205f}'
+            | '\u{3000}'
+    )
 }
+
 pub fn punctuation(ch: char) -> bool {
     ch.is_ascii_punctuation()
         || matches!(
@@ -26,6 +37,15 @@ pub fn punctuation(ch: char) -> bool {
                 | G::ModifierSymbol
                 | G::OtherSymbol
         )
+}
+
+fn flanking(prev: char, next: char, marker: u8) -> (bool, bool) {
+    let left = !whitespace(next) && (!punctuation(next) || whitespace(prev) || punctuation(prev));
+    let right = !whitespace(prev) && (!punctuation(prev) || whitespace(next) || punctuation(next));
+    (
+        left && (marker != b'_' || !right || punctuation(prev)),
+        right && (marker != b'_' || !left || punctuation(next)),
+    )
 }
 
 /// CommonMark-style flanking reused by paired extensions; odd suffixes remain.
@@ -51,14 +71,13 @@ pub fn paired(
     }
     let prev = source[..pos].chars().next_back().unwrap_or(' ');
     let next = source[end..].chars().next().unwrap_or(' ');
-    let left = !whitespace(next) && (!punctuation(next) || whitespace(prev) || punctuation(prev));
-    let right = !whitespace(prev) && (!punctuation(prev) || whitespace(next) || punctuation(next));
+    let (open, close) = flanking(prev, next, marker);
     let pairing = Pairing {
         marker,
         width,
         run_length: length,
-        open: left && (marker != b'_' || !right || punctuation(prev)),
-        close: right && (marker != b'_' || !left || punctuation(next)),
+        open,
+        close,
         rule_of_three,
         combine_pairs: combine,
         make,

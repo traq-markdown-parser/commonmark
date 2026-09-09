@@ -15,11 +15,11 @@ fn setext(input: &BlockInput<'_>, line: usize) -> Result<Option<u8>, ParseError>
             .span_for(input.lines[line].start..input.lines[line].start)?
             .start,
     ) {
-        Ok(None)
-    } else {
-        Ok(underline(input.line(line)))
+        return Ok(None);
     }
+    Ok(underline(input.line(line)))
 }
+
 pub(super) fn paragraph_start(mut line: &str, input: &BlockInput<'_>) -> bool {
     loop {
         if blank(line) || line.starts_with("    ") || line.starts_with('\t') {
@@ -50,11 +50,13 @@ pub(super) fn parse(
     {
         end += 1;
     }
+
     let raw = &source.text()[lines[first].start..lines[end - 1].end];
     let start = lines[first].start + raw.len() - raw.trim_start_matches(ascii_space).len();
     let finish = lines[end - 1].start + input.line(end - 1).trim_end_matches(ascii_space).len();
     let view = source.join(&[start..finish.max(start)])?;
 
+    // A setext underline is consumed as part of the paragraph's heading.
     let kind = if let Some(level) = if end < lines.len() {
         setext(input, end)?
     } else {

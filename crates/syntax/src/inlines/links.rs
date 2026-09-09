@@ -58,22 +58,14 @@ pub fn link(
 
     let direct = destination(source, pos + 1, budget, options.normalize)?;
     let image = bracket.tag == "image" && (options.direct_images || direct.is_none());
+
     let (end, target, title) = if let Some(direct) = direct {
         direct
     } else {
-        let mut label = &source[bracket.label_start..pos];
-        let mut end = pos + 1;
-        if let Some(close) = references::label_end(&source[end..]) {
-            let explicit = &source[end + 1..end + close];
-            if !explicit.is_empty() {
-                label = explicit;
-            }
-            end += close + 1;
-        }
-        let Some((target, title)) = input.reference(&references::key(label)) else {
+        let Some(reference) = reference_target(input, source, pos, bracket.label_start) else {
             return Ok(discard());
         };
-        (end, target.clone(), title.clone())
+        reference
     };
 
     let kind = if image {
@@ -99,6 +91,26 @@ pub fn link(
     }))
 }
 
+fn reference_target(
+    input: &InlineInput<'_>,
+    source: &str,
+    pos: usize,
+    label_start: usize,
+) -> Option<(usize, String, Option<String>)> {
+    let mut label = &source[label_start..pos];
+    let mut end = pos + 1;
+    if let Some(close) = references::label_end(&source[end..]) {
+        let explicit = &source[end + 1..end + close];
+        if !explicit.is_empty() {
+            label = explicit;
+        }
+        end += close + 1;
+    }
+
+    let (target, title) = input.reference(&references::key(label))?;
+    Some((end, target.clone(), title.clone()))
+}
+
 pub fn autolink(
     input: &InlineInput<'_>,
     budget: &mut Budget,
@@ -120,16 +132,7 @@ pub fn autolink(
 
     let value = &source[pos + 1..end];
     let email = email(value);
-    let scheme = value.split_once(':').map(|(scheme, _)| scheme);
-    if !email
-        && !scheme.is_some_and(|scheme| {
-            (2..=32).contains(&scheme.len())
-                && scheme.as_bytes()[0].is_ascii_alphabetic()
-                && scheme
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b"+.-".contains(&b))
-        })
-    {
+    if !email && !valid_scheme(value) {
         return Ok(None);
     }
 
@@ -159,6 +162,17 @@ pub fn autolink(
             inhibit_brackets: !options.nested_autolinks,
         },
     }))
+}
+
+fn valid_scheme(value: &str) -> bool {
+    let Some((scheme, _)) = value.split_once(':') else {
+        return false;
+    };
+    (2..=32).contains(&scheme.len())
+        && scheme.as_bytes()[0].is_ascii_alphabetic()
+        && scheme
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"+.-".contains(&b))
 }
 
 fn email(value: &str) -> bool {

@@ -22,6 +22,7 @@ pub(super) fn start(line: &str) -> Option<u8> {
         r"h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:[ \t]|/?>|$)"
     )).unwrap()
     });
+
     if RAW.is_match(text) {
         Some(1)
     } else if text.starts_with("<!--") {
@@ -40,6 +41,7 @@ pub(super) fn start(line: &str) -> Option<u8> {
         None
     }
 }
+
 fn closes(kind: u8, line: &str) -> bool {
     match kind {
         1 => {
@@ -54,6 +56,7 @@ fn closes(kind: u8, line: &str) -> bool {
         _ => line.bytes().all(|b| matches!(b, b' ' | b'\t')),
     }
 }
+
 pub(super) fn parse(
     input: &BlockInput<'_>,
     budget: &mut Budget,
@@ -61,6 +64,21 @@ pub(super) fn parse(
     let Some(kind) = start(input.current()) else {
         return Ok(None);
     };
+
+    let end = block_end(input, kind, budget)?;
+    let range = input.lines[input.start].start..input.lines[end - 1].end;
+    let literal = input.source.literal(range.clone()).into_owned();
+    let span = input.source.span_for(range.start..range.end)?;
+    Ok(Some(BlockMatch::node(
+        end,
+        DraftNode::leaf(
+            span,
+            NodeKind::new(markdown_commonmark_contracts::HtmlBlock { literal }),
+        ),
+    )))
+}
+
+fn block_end(input: &BlockInput<'_>, kind: u8, budget: &mut Budget) -> Result<usize, ParseError> {
     let mut end = input.start + 1;
     if !closes(kind, input.current()) {
         while end < input.lines.len() {
@@ -75,14 +93,5 @@ pub(super) fn parse(
             end += 1;
         }
     }
-    let range = input.lines[input.start].start..input.lines[end - 1].end;
-    let literal = input.source.literal(range.clone()).into_owned();
-    let span = input.source.span_for(range.start..range.end)?;
-    Ok(Some(BlockMatch::node(
-        end,
-        DraftNode::leaf(
-            span,
-            NodeKind::new(markdown_commonmark_contracts::HtmlBlock { literal }),
-        ),
-    )))
+    Ok(end)
 }

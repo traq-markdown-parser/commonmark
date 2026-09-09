@@ -40,34 +40,45 @@ pub(crate) fn decode_entity(
     if source.as_bytes().get(end) != Some(&b';') {
         return None;
     }
+
     let name = &source[1..end];
     let decoded = if let Some(digits) = name.strip_prefix('#') {
-        let (digits, radix, limit) = if digits.starts_with(['x', 'X']) {
-            (&digits[1..], 16, hex_limit)
-        } else {
-            (digits, 10, decimal_limit)
-        };
-        if digits.is_empty() || digits.len() > limit || !digits.chars().all(|c| c.is_digit(radix)) {
-            return None;
-        }
-        let code = u32::from_str_radix(digits, radix).ok()?;
-        let valid = !matches!(code, 0..=8 | 11 | 14..=31 | 127..=159 | 0xfdd0..=0xfdef)
-            && code & 0xffff != 0xffff
-            && code & 0xffff != 0xfffe;
-        if valid {
-            char::from_u32(code).unwrap_or('\u{fffd}')
-        } else {
-            '\u{fffd}'
-        }
-        .to_string()
+        decode_numeric(digits, decimal_limit, hex_limit)?
     } else {
-        if !(2..=32).contains(&name.len()) || !name.as_bytes()[0].is_ascii_alphabetic() {
-            return None;
-        }
-        let index = table::NAMED
-            .binary_search_by_key(&name, |(name, _)| *name)
-            .ok()?;
-        table::NAMED[index].1.into()
+        decode_named(name)?
     };
     Some((end + 1, decoded))
+}
+
+fn decode_numeric(digits: &str, decimal_limit: usize, hex_limit: usize) -> Option<String> {
+    let (digits, radix, limit) = if digits.starts_with(['x', 'X']) {
+        (&digits[1..], 16, hex_limit)
+    } else {
+        (digits, 10, decimal_limit)
+    };
+    if digits.is_empty() || digits.len() > limit || !digits.chars().all(|c| c.is_digit(radix)) {
+        return None;
+    }
+
+    let code = u32::from_str_radix(digits, radix).ok()?;
+    let valid = !matches!(code, 0..=8 | 11 | 14..=31 | 127..=159 | 0xfdd0..=0xfdef)
+        && code & 0xffff != 0xffff
+        && code & 0xffff != 0xfffe;
+    let character = if valid {
+        char::from_u32(code).unwrap_or('\u{fffd}')
+    } else {
+        '\u{fffd}'
+    };
+    Some(character.to_string())
+}
+
+fn decode_named(name: &str) -> Option<String> {
+    if !(2..=32).contains(&name.len()) || !name.as_bytes()[0].is_ascii_alphabetic() {
+        return None;
+    }
+
+    let index = table::NAMED
+        .binary_search_by_key(&name, |(name, _)| *name)
+        .ok()?;
+    Some(table::NAMED[index].1.into())
 }

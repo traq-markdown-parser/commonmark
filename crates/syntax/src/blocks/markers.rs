@@ -1,15 +1,18 @@
 pub(super) fn blank(line: &str) -> bool {
     line.bytes().all(|b| b == b' ' || b == b'\t')
 }
+
 pub(super) fn ascii_space(ch: char) -> bool {
     matches!(ch, ' ' | '\t' | '\n' | '\r')
 }
+
 pub(super) fn content<'a>(
     source: &'a markdown_parser::engine::source::SourceView,
     line: &std::ops::Range<usize>,
 ) -> &'a str {
     source.text()[line.clone()].trim_end_matches('\n')
 }
+
 pub(super) fn underline(line: &str) -> Option<u8> {
     if line.starts_with("    ") || line.starts_with('\t') {
         return None;
@@ -33,6 +36,7 @@ pub(super) fn fence(line: &str) -> Option<(u8, usize, &str)> {
     let info = text[count..].trim();
     (count >= 3 && (marker != b'`' || !info.contains('`'))).then_some((marker, count, info))
 }
+
 pub(super) fn heading(line: &str) -> Option<(u8, usize)> {
     let indent = line.len() - line.trim_start_matches(' ').len();
     if indent > 3 {
@@ -40,7 +44,9 @@ pub(super) fn heading(line: &str) -> Option<(u8, usize)> {
     }
     let line = &line[indent..];
     let level = line.bytes().take_while(|b| *b == b'#').count();
-    if !(1..=6).contains(&level) || !line[level..].starts_with([' ', '\t']) && line.len() != level {
+    let valid_level = (1..=6).contains(&level);
+    let has_separator = line.len() == level || line[level..].starts_with([' ', '\t']);
+    if !valid_level || !has_separator {
         return None;
     }
     Some((
@@ -48,6 +54,7 @@ pub(super) fn heading(line: &str) -> Option<(u8, usize)> {
         indent + level + line[level..].len() - line[level..].trim_start().len(),
     ))
 }
+
 pub(super) fn thematic(line: &str) -> bool {
     let mut chars = line.bytes().filter(|b| !b.is_ascii_whitespace());
     let Some(marker) = chars.next() else {
@@ -55,6 +62,7 @@ pub(super) fn thematic(line: &str) -> bool {
     };
     b"-*_".contains(&marker) && chars.clone().count() >= 2 && chars.all(|b| b == marker)
 }
+
 // Prefix width, ordered, starting number. Indentation is handled by the caller.
 pub(super) struct Marker {
     pub content: usize,
@@ -64,6 +72,7 @@ pub(super) struct Marker {
     pub delimiter: u8,
     pub text: String,
 }
+
 pub(super) fn item(line: &str) -> Option<Marker> {
     let indent = line.len() - line.trim_start_matches(' ').len();
     if indent > 3 {
@@ -101,6 +110,7 @@ pub(super) fn item(line: &str) -> Option<Marker> {
         text: line[..end].into(),
     })
 }
+
 pub(super) fn quote(line: &str) -> Option<usize> {
     let indent = line.len() - line.trim_start_matches(' ').len();
     if indent > 3 {
