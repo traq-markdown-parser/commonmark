@@ -34,7 +34,7 @@ export function registerBlockHandlers(
   result.on(
     names.Paragraph,
     checked(names.Paragraph, isKnownNode, (n, ctx) => {
-      const content = ctx.inline(n.children);
+      const content = ctx.render(n.children);
 
       return ctx.ancestors.at(-1)?.kind === names.ListItem &&
         tightList(ctx.ancestors.at(-2))
@@ -52,7 +52,7 @@ export function registerBlockHandlers(
         "<h" +
         n.data.level +
         ">" +
-        ctx.inline(n.children) +
+        ctx.render(n.children) +
         "</h" +
         n.data.level +
         ">\n",
@@ -67,7 +67,7 @@ export function registerBlockHandlers(
       (n, ctx) =>
         "<blockquote>" +
         (n.children?.length ? "\n" : "") +
-        ctx.blocks(n.children) +
+        ctx.render(n.children) +
         "</blockquote>\n",
     ),
   );
@@ -82,7 +82,7 @@ export function registerBlockHandlers(
           : "";
 
       return (
-        "<" + tag + attrs + ">\n" + ctx.blocks(n.children) + "</" + tag + ">\n"
+        "<" + tag + attrs + ">\n" + ctx.render(n.children) + "</" + tag + ">\n"
       );
     }),
   );
@@ -94,7 +94,7 @@ export function registerBlockHandlers(
       const tight = tightList(ctx.ancestors.at(-1));
       const content = children
         .map((child, i) => {
-          const rendered = ctx.blocks([child]);
+          const rendered = ctx.render([child]);
 
           // A line break following a tight paragraph needs no leading whitespace.
           const separator =

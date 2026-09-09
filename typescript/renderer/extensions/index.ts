@@ -50,7 +50,7 @@ function row(node: Node & { data: RowData }, ctx: RenderContext) {
         tag +
         attrs +
         ">" +
-        ctx.inline(cell.children) +
+        ctx.render(cell.children) +
         "</" +
         tag +
         ">\n"
@@ -71,7 +71,7 @@ export function plugin({ math = defaultMath }: Options = {}) {
     checked(
       names.Mark,
       isKnownNode,
-      (n, ctx) => "<mark>" + ctx.inline(n.children) + "</mark>",
+      (n, ctx) => "<mark>" + ctx.render(n.children) + "</mark>",
     ),
   );
   result.on(
@@ -79,7 +79,7 @@ export function plugin({ math = defaultMath }: Options = {}) {
     checked(
       names.Strikethrough,
       isKnownNode,
-      (n, ctx) => "<s>" + ctx.inline(n.children) + "</s>",
+      (n, ctx) => "<s>" + ctx.render(n.children) + "</s>",
     ),
   );
   result.on(names.Table, checked(names.Table, isKnownNode, table));

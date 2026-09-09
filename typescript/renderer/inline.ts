@@ -78,7 +78,7 @@ export function registerInlineHandlers(
     checked(
       names.Emphasis,
       isKnownNode,
-      (n, ctx) => "<em>" + ctx.inline(n.children) + "</em>",
+      (n, ctx) => "<em>" + ctx.render(n.children) + "</em>",
     ),
   );
 
@@ -87,14 +87,14 @@ export function registerInlineHandlers(
     checked(
       names.Strong,
       isKnownNode,
-      (n, ctx) => "<strong>" + ctx.inline(n.children) + "</strong>",
+      (n, ctx) => "<strong>" + ctx.render(n.children) + "</strong>",
     ),
   );
 
   result.on(
     names.Link,
     checked(names.Link, isKnownNode, (n, ctx) => {
-      const content = ctx.inline(n.children);
+      const content = ctx.render(n.children);
 
       if (!validateLink(n.data.destination)) return content;
 
